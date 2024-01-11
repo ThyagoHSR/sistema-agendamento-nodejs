@@ -1,0 +1,16 @@
+{
+  "name": "desafio-aceleradora-agil",
+  "version": "1.0.0",
+  "description": "desafio aceleradora digital para criar um sistema de agendamento para uma clinica",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.mjs"
+  },
+  "author": "ThyagoHSR",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "inquirer": "^9.2.12"
+  }
+}
