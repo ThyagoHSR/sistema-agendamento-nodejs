@@ -5,7 +5,9 @@ import chalk from 'chalk'
 //internal modules
 import fs from 'fs'
 
-console.log(chalk.bgBlue.blue(`Olá seja Bem-vindo ao sistema de agendamento daClínica de Consultas Ágil`))
+
+const saudation = `Olá seja Bem-vindo ao sistema de agendamento da Clínica de Consultas Ágil`
+console.log(chalk.bgBlue.white(saudation))
 operation()
 
 function operation(){
@@ -58,7 +60,7 @@ function createPatient() {
     },
     {
       name: 'patientPhone',
-      message: 'Digite o numero do paciente: '
+      message: 'Digite o telefone do paciente: '
     }
   ]).then(answer => {
     const {patientName, patientPhone} = answer;
@@ -112,13 +114,27 @@ function scheduleAppointment() {
   ]).then(answers => {
     const { selectedPatient, appointmentDate, appointmentTime, specialty } = answers;
 
+    if (!isDateAndTimeAvailable(selectedPatient, appointmentDate, appointmentTime)) {
+      console.log(chalk.bgRed.white('Data e hora já agendadas para esse paciente. Por favor, escolha outro horário.'));
+      operation();
+      return;
+    }
+
+    const appointmentsDir = 'Agendamentos';
+    if (!fs.existsSync(appointmentsDir)) {
+      fs.mkdirSync(appointmentsDir);
+    }
+
     const appointmentDetails = {
+      "Nome do paciente": selectedPatient,
       "Data": appointmentDate,
       "Hora": appointmentTime,
       "Especialidade": specialty
     };
 
-
+    const appointmentFileName = `${selectedPatient}-${appointmentDate}-${appointmentTime}.json`;
+    const appointmentFilePath = `${appointmentsDir}/${appointmentFileName}`;
+    fs.writeFileSync(appointmentFilePath, JSON.stringify(appointmentDetails, null, 2));
     const patientFilePath = `Pacientes/${selectedPatient}.json`;
     const patientData = JSON.parse(fs.readFileSync(patientFilePath, 'utf8'));
 
@@ -139,10 +155,17 @@ function scheduleAppointment() {
   
 }
 
-function cancelAppointment() {
-  
-  const patients = fs.readdirSync('Pacientes').map(file => file.replace('.json', ''));
+function isDateAndTimeAvailable(selectedPatient, appointmentDate, appointmentTime) {
+  const patientData = JSON.parse(fs.readFileSync(`Pacientes/${selectedPatient}.json`, 'utf8'));
+  if (patientData.agendamentos) {
+    return !patientData.agendamentos.some(appointment => appointment.Data === appointmentDate && appointment.Hora === appointmentTime);
+  }
+  return true;
+}
 
+
+function cancelAppointment() {
+  const patients = fs.readdirSync('Pacientes').map(file => file.replace('.json', ''));
   const allAppointments = [];
 
   patients.forEach(patient => {
@@ -185,9 +208,15 @@ function cancelAppointment() {
       }
     ]).then(confirmAnswer => {
       if (confirmAnswer.confirmCancel) {
+        // Removendo o agendamento do arquivo do paciente
         const patientData = JSON.parse(fs.readFileSync(`Pacientes/${selectedAppointment.paciente}.json`, 'utf8'));
         patientData.agendamentos.splice(selectedAppointment.numero - 1, 1);
         fs.writeFileSync(`Pacientes/${selectedAppointment.paciente}.json`, JSON.stringify(patientData, null, 2));
+
+        // Removendo o agendamento do diretório de agendamentos
+        const appointmentFileName = `${selectedAppointment.paciente}-${selectedAppointment.Data}-${selectedAppointment.Hora}.json`;
+        fs.unlinkSync(`Agendamentos/${appointmentFileName}`);
+
         console.log(chalk.bgGreen('Agendamento cancelado com sucesso!'));
       } else {
         console.log(chalk.bgYellow.black('Operação de cancelamento cancelada pelo usuário.'));
@@ -212,7 +241,7 @@ function exit (){
     const actionExit = answer['actionExit'] 
 
     if(actionExit === 'Sim'){
-        console.log(chalk.bgBlue.black('Obrigado por usar o nosso sistema de agendamento :) !'),)
+        console.log(chalk.bgBlue.white('Obrigado por usar o nosso sistema de agendamento :) !'),)
         process.exit()
     }
     else if(actionExit === 'Não'){
@@ -220,6 +249,5 @@ function exit (){
     }
 
 } )
-
 }
 
